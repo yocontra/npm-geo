@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "hyperquest": "~0.2.0",
+    "request": "~2.30.0",
+    "async": "~0.2.9",
+    "fixnode": "0.0.1",
+    "lodash": "~2.4.1"
+  }
+}
