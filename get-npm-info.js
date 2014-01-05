@@ -8,6 +8,6 @@ var outFile = path.join(__dirname, 'data', 'npmTop.json');
 
 var topStream = hyperquest(url).pipe(fs.createWriteStream(outFile));
 
-topStream.once('end', function(){
+topStream.once('end', function () {
   console.log('Done!');
 });

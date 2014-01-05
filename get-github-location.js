@@ -1,0 +1,75 @@
+require('fixnode');
+var request = require('request');
+var _ = require('lodash');
+var async = require('async');
+var argv = require('optimist').argv;
+var fs = require('fs');
+var path = require('path');
+
+var limit = 100;
+var backoff = 3000;
+var count = 0;
+var user = argv.user;
+var pass = argv.pass;
+
+if (!user || !pass) throw "Missing argument";
+
+var outFile = path.join(__dirname, 'data', 'authors-with-location.json');
+
+var authors = require('./data/authors');
+
+console.log('There are', authors.length, 'authors');
+console.log('Grabbing locations from github...');
+
+async.eachLimit(authors, limit, findLocation, function(err){
+  if (err) {
+    console.log('Error getting location:', err);
+    process.exit(1);
+  }
+  var failed = _.where(authors, {location: null});
+  console.log('Failed to find location for', failed.length, 'authors');
+  fs.writeFileSync(outFile, JSON.stringify(authors, null, 2));
+  console.log('Done!');
+});
+
+
+function findLocation(author, cb) {
+  var url = "https://api.github.com/users/"+author.github;
+
+  var opt = {
+    json: true,
+    headers: {
+      'User-Agent': 'npm-geo'
+    },
+    auth: {
+      user: user,
+      pass: pass
+    }
+  };
+
+  var retry = function(delay) {
+    if (delay) delay = Math.max(0, delay*1000-Date.now());
+    if (!delay) delay = backoff;
+    console.log('Waiting', delay/1000, 'seconds');
+    setTimeout(function(){
+      findLocation(author, cb);
+    }, delay);
+  };
+
+  request(url, opt, function(err, res, user){
+    //console.log(err, res.statusCode, res.headers);
+    //if (res.statusCode === 403) return cb("Invalid username or token");
+    if (res.statusCode === 404) return cb();
+    if (err) return retry();
+    var remaining = parseInt(res.headers['x-ratelimit-remaining'], 10);
+    var reset = parseInt(res.headers['x-ratelimit-reset'], 10);
+    if (remaining === 0) return retry(reset);
+
+    console.log(++count);
+
+    if (user.location) {
+      author.location = user.location;
+    }
+    cb();
+  });
+}

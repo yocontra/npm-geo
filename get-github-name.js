@@ -22,21 +22,25 @@ var authors = filterNpm(npmTop);
 console.log('There are', authors.length, 'total module authors');
 console.log('Grabbing github names from npm...');
 
-async.eachLimit(authors, limit, findGithub, function(err){
+async.eachLimit(authors, limit, findGithub, function (err) {
   if (err) {
-    console.log('Error getting github name', err);
+    console.log('Error getting github name:', err);
     process.exit(1);
   }
-  var failed = _.where(authors, {guessed: true});
+  var failed = _.where(authors, {
+    guessed: true
+  });
   console.log('Failed to find github usernames for', failed.length, 'authors');
   fs.writeFileSync(outFile, JSON.stringify(authors, null, 2));
   console.log('Done!');
 });
 
 
-function findGithub (author, cb) {
-  var pkgUrl = registry+author.module+"/latest";
-  request(pkgUrl, {json: true}, function(err, res, pkg){
+function findGithub(author, cb) {
+  var pkgUrl = registry + author.module + "/latest";
+  request(pkgUrl, {
+    json: true
+  }, function (err, res, pkg) {
     if (err) return findGithub(author, cb); // retry forever
 
     console.log(++count);
@@ -65,18 +69,18 @@ function findGithub (author, cb) {
   });
 }
 
-function extractUsername (repo) {
+function extractUsername(repo) {
   var matches = repo.match(/github.com[\/:](.*)\//);
   if (!matches) return;
   return matches[1];
 }
 
-function filterNpm (npm) {
+function filterNpm(npm) {
   return _.chain(npm)
-    .groupBy(function(v) {
+    .groupBy(function (v) {
       return v.key[0];
     })
-    .map(function(v, k){
+    .map(function (v, k) {
       return {
         count: v.length,
         module: v[0].key[1],
@@ -86,5 +90,6 @@ function filterNpm (npm) {
       };
     })
     .sortBy('count')
+    .reverse()
     .value();
 }
