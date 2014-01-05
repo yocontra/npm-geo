@@ -73,7 +73,7 @@ function findLocation(author, cb) {
     if (!user.location) return cb();
     var name = user.location.replace(/\b[A-Z]\./g, '');
     placename(name, function (err, pt) {
-      if (err || !pt) {
+      if (err || !pt || !pt[0]) {
         author.location = user.location;
         return cb();
       }
