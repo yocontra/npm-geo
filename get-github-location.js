@@ -57,6 +57,11 @@ function findLocation(author, cb) {
     setTimeout(function(){
       findLocation(author, cb);
     }, delay);
+
+    var success = _.where(authors, function(v){
+      return !!v.location;
+    });
+    fs.writeFileSync(outFile, JSON.stringify(success, null, 2));
   };
 
   request(url, opt, function(err, res, user){
@@ -68,9 +73,13 @@ function findLocation(author, cb) {
     var reset = parseInt(res.headers['x-ratelimit-reset'], 10);
     if (remaining === 0) return retry(reset);
 
-    console.log(++count);
+    console.log(++count, remaining);
 
-    if (!user.location) return cb();
+    if (user.location) {
+      author.location = user.location;
+    }
+    cb();
+    /*
     var name = user.location.replace(/\b[A-Z]\./g, '');
     placename(name, function (err, pt) {
       if (err || !pt || !pt[0]) {
@@ -86,5 +95,6 @@ function findLocation(author, cb) {
       };
       cb();
     });
+    */
   });
 }
