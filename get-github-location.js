@@ -2,6 +2,7 @@ require('fixnode');
 var request = require('request');
 var _ = require('lodash');
 var async = require('async');
+var placename = require('placename');
 var argv = require('optimist').argv;
 var fs = require('fs');
 var path = require('path');
@@ -26,9 +27,11 @@ async.eachLimit(authors, limit, findLocation, function(err){
     console.log('Error getting location:', err);
     process.exit(1);
   }
-  var failed = _.where(authors, {location: null});
-  console.log('Failed to find location for', failed.length, 'authors');
-  fs.writeFileSync(outFile, JSON.stringify(authors, null, 2));
+  var success = _.where(authors, function(v){
+    return !!v.location;
+  });
+  console.log('Failed to find location for', authors.length-success.length, 'authors');
+  fs.writeFileSync(outFile, JSON.stringify(success, null, 2));
   console.log('Done!');
 });
 
@@ -39,7 +42,7 @@ function findLocation(author, cb) {
   var opt = {
     json: true,
     headers: {
-      'User-Agent': 'npm-geo'
+      'User-Agent': 'npm-geo-app'
     },
     auth: {
       user: user,
@@ -54,6 +57,10 @@ function findLocation(author, cb) {
     setTimeout(function(){
       findLocation(author, cb);
     }, delay);
+    var success = _.where(authors, function(v){
+    return !!v.location;
+  });
+    fs.writeFileSync(outFile, JSON.stringify(success, null, 2));
   };
 
   request(url, opt, function(err, res, user){
@@ -67,9 +74,21 @@ function findLocation(author, cb) {
 
     console.log(++count);
 
-    if (user.location) {
-      author.location = user.location;
-    }
-    cb();
+    if (!user.location) return cb();
+    var name = user.location.replace(/\b[A-Z]\./g, '');
+    placename(name, function (err, pt) {
+      if (err || !pt) {
+        author.location = user.location;
+        return cb();
+      }
+      author.location = {
+        place: pt[0].name,
+        country: pt[0].country,
+        lat: pt[0].lat,
+        lon: pt[0].lon,
+        population: pt[0].population
+      };
+      cb();
+    });
   });
 }
