@@ -2,7 +2,6 @@ require('fixnode');
 var request = require('request');
 var _ = require('lodash');
 var async = require('async');
-var placename = require('placename');
 var argv = require('optimist').argv;
 var fs = require('fs');
 var path = require('path');
@@ -74,22 +73,5 @@ function findLocation(author, cb) {
       author.location = user.location;
     }
     cb();
-    /*
-    var name = user.location.replace(/\b[A-Z]\./g, '');
-    placename(name, function (err, pt) {
-      if (err || !pt || !pt[0]) {
-        author.location = user.location;
-        return cb();
-      }
-      author.location = {
-        place: pt[0].name,
-        country: pt[0].country,
-        lat: pt[0].lat,
-        lon: pt[0].lon,
-        population: pt[0].population
-      };
-      cb();
-    });
-    */
   });
 }
