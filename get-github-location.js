@@ -57,10 +57,6 @@ function findLocation(author, cb) {
     setTimeout(function(){
       findLocation(author, cb);
     }, delay);
-    var success = _.where(authors, function(v){
-    return !!v.location;
-  });
-    fs.writeFileSync(outFile, JSON.stringify(success, null, 2));
   };
 
   request(url, opt, function(err, res, user){
